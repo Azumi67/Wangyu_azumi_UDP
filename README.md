@@ -1,2 +1,1 @@
-# Wangyu_azumi_UDP
-An script for Wangyu udp tunnels and forwarder and also azumi proxyforwarder
+به زودی اسکریپت تانل های ترکیبی و سینگل wangyu و پورت فوروارد proxyforwarder خودم که استفاده میکنم را انتشار میدهم چون برای وایرگارد هم خوب جواب میده. 
