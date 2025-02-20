@@ -1078,10 +1078,14 @@ def setup_speederv2_server():
         print("\033[93m───────────────────────────────────────\033[0m")
         print(f"\033[93mConfiguring \033[92mClient {i+1}\033[0m")
         print("\033[93m───────────────────────────────────────\033[0m")
+        
         tunnel_port = input("\033[93mEnter \033[92mtunnel port\033[93m:\033[0m ")
         wireguard_port = input("\033[93mEnter \033[92mUDP \033[93mport:\033[0m ")
         password = input("\033[93mEnter \033[92mpassword\033[93m:\033[0m ")
-        
+
+        timeout = input("\033[93mEnter \033[92mtimeout \033[97m(8 or 1, default 1)\033[93m:\033[0m ").strip() or "1"
+        tun_mtu = input("\033[93mEnter \033[92mTUN MTU \033[97m(default 1250)\033[93m:\033[0m ") or "1250"
+
         fec_enabled = input("\033[93mDo you want to \033[92menable FEC\033[93m? \033[93m?(\033[92myes\033[93m/\033[91mn\033[97m default yes)\033[93m:\033[0m ").strip().lower() or "yes"
         if fec_enabled in ["yes", "y"]:
             fec_option = "-f20:10"
@@ -1090,7 +1094,7 @@ def setup_speederv2_server():
 
         mode = input("\033[93mEnter\033[92m mode\033[97m (0 or 1, default 1)\033[93m: \033[0m").strip() or "1"
         
-        speederv2_command = f"{binary_path} -s -l0.0.0.0:{tunnel_port} --mode {mode} -r127.0.0.1:{wireguard_port} {fec_option} -k \"{password}\""
+        speederv2_command = f"{binary_path} -s -l0.0.0.0:{tunnel_port} --mode {mode} --timeout {timeout} --mtu {tun_mtu} -r127.0.0.1:{wireguard_port} {fec_option} -k \"{password}\""
 
         create_service(f"speederv2_{i+1}", speederv2_command)
         restart_speederv_daemon_server()
@@ -1193,18 +1197,23 @@ def setup_speederv2_client():
     tunnel_port = input("\033[93mEnter \033[92mtunnel port\033[93m:\033[0m ")
     password = input("\033[93mEnter \033[92mpassword\033[93m:\033[0m ")
     server_ip = input(f"\033[93mEnter \033[92mserver IP address\033[93m: \033[0m")
-    
+
+    timeout = input("\033[93mEnter \033[92mtimeout \033[97m(8 or 1, default 1)\033[93m:\033[0m ").strip() or "1"
+    tun_mtu = input("\033[93mEnter \033[92mTUN MTU \033[97m(default 1250)\033[93m:\033[0m ") or "1250"
+
     fec_enabled = input("\033[93mDo you want to \033[92menable FEC\033[93m? \033[93m?(\033[92myes\033[93m/\033[91mn\033[97m default yes)\033[93m:\033[0m ").strip().lower() or "yes"
     if fec_enabled in ["yes", "y"]:
         fec_option = "-f20:10"
     else:
         fec_option = "--disable-fec"
+    
     mode = input("\033[93mEnter mode \033[97m(0 or 1, default 1)\033[93m:\033[0m ").strip() or "1"
     
-    speederv2_command = f"{binary_path} -c -l0.0.0.0:{wireguard_port} -r{server_ip}:{tunnel_port} --mode {mode} {fec_option} -k \"{password}\""
+    speederv2_command = f"{binary_path} -c -l0.0.0.0:{wireguard_port} -r{server_ip}:{tunnel_port} --mode {mode} --timeout {timeout} --mtu {tun_mtu} {fec_option} -k \"{password}\""
 
     create_service(f"speederv2", speederv2_command)
     restart_speederv_daemon()
+
 
 def setup_server_udp2raw_updspeeder():
     print("\033[93m───────────────────────────────────────\033[0m")
