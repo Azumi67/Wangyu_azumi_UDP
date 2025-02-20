@@ -230,3 +230,27 @@
 
   </details>
 </div>  
+
+--------------------
+
+![R (a2)](https://github.com/Azumi67/PrivateIP-Tunnel/assets/119934376/716fd45e-635c-4796-b8cf-856024e5b2b2)
+**اسکریپت من**
+----------------
+
+- نصب پیش نیاز ها
+```
+apt install python3 -y && sudo apt install python3-pip &&  pip install colorama && pip install netifaces && apt install curl -y
+pip3 install colorama
+sudo apt-get install python-pip -y  &&  apt-get install python3 -y && alias python=python3 && python -m pip install colorama && python -m pip install netifaces
+sudo apt update -y && sudo apt install -y python3 python3-pip curl && pip3 install --upgrade pip && pip3 install netifaces colorama requests
+
+```
+- اجرای اسکریپت
+```
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Azumi67/Wangyu_azumi_UDP/refs/heads/main/wangyu.sh)"
+```
+- در صورتی که سرور شما externally managed بود، از کامند زیر استفاده نمایید
+```
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/Azumi67/Wangyu_azumi_UDP/refs/heads/main/managed.sh)"
+```
+---------------------------------------------
