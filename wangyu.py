@@ -4495,7 +4495,7 @@ def restart_tinyvpn_client():
     display_notification("\033[93mRestarting TinyVPN Client...\033[0m")
     print("\033[93m───────────────────────────────────────\033[0m")
 
-    service_name = "tinyvpn_client"
+    service_name = "tinyvpn"
 
     try:
         subprocess.run(["systemctl", "stop", service_name], check=True)
