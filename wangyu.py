@@ -594,6 +594,37 @@ def display_subnet_in_box(subnet):
     print("\033[93m│ \033[92mSubnet: \033[97m" + subnet + " \033[93m│\033[0m") 
     print("\033[93m" + "─" * box_width + "\033[0m")  
 
+def edit_keepalive_timer():
+    script_path = "/usr/local/bin/keepalive.sh"
+
+    if not os.path.exists(script_path):
+        print("\033[91mKeep-Alive script not found!\033[0m")
+        return
+
+    with open(script_path, "r") as script_file:
+        script_content = script_file.read()
+
+    match = re.search(r"sleep (\d+)", script_content)
+    current_timer = match.group(1) if match else "10"  
+
+    print("\033[93m───────────────────────────────────────\033[0m")
+    print(f"\033[93mCurrent Keep-Alive Timer:\033[92m {current_timer} seconds\033[0m")
+    print("\033[93m───────────────────────────────────────\033[0m")
+
+    new_timer = input("\033[93mEnter \033[92mnew Keep-Alive timer\033[97m (seconds, default 10)\033[93m:\033[0m ").strip() or "10"
+
+    updated_script = re.sub(r"sleep \d+", f"sleep {new_timer}", script_content)
+
+    with open(script_path, "w") as script_file:
+        script_file.write(updated_script)
+
+    os.chmod(script_path, 0o755)  
+
+    print("\033[92mKeep-Alive timer updated successfully!\033[0m")
+
+    subprocess.run(["systemctl", "restart", "keepalive.service"], check=True)
+    print("\033[92mKeep-Alive service restarted.\033[0m")
+
 def setup_tinyvpn_server():
     print("\033[93m───────────────────────────────────────\033[0m")
     display_notification("\033[93mInstalling TinyVPN Server...\033[0m")
@@ -621,7 +652,7 @@ def setup_tinyvpn_server():
     tinyvpn_command = f"./tinyvpn -s -l0.0.0.0:{tinyvpnport} {fec_option} -k \"{password}\" --sub-net {subnet} --tun {tun_name} --mode {mode} --timeout {timeout} --tun-mtu {tun_mtu}"
 
     create_service("tinyvpn", tinyvpn_command)
-    setup_keepalive(subnet)
+    setup_keepalive(subnet, is_server=True)
     restart_tinyvpn_daemon()
 
 
@@ -683,7 +714,7 @@ def setup_tinyvpn_client():
     tinyvpn_command = f"{binary_path} -c -r {server_public_ip}:{tinyvpnport} {fec_option} -k \"{password}\" --tun {tun_name} --sub-net {subnet} --keep-reconnect --mode {mode} --timeout {timeout} --tun-mtu {tun_mtu}"
 
     create_service("tinyvpn", tinyvpn_command)
-    setup_keepalive(subnet)
+    setup_keepalive(subnet, is_server=False)
     restart_tinyvpn_daemon()
     
 
@@ -724,22 +755,22 @@ def getopposite_subnet(subnet, is_server=True):
     opposite_subnet = parts[:-1] + [opposite_ip]
     return ".".join(opposite_subnet)
 
-def keepalive_script(subnet, is_server=True):
+def keepalive_script(subnet, is_server=True, keepalive_interval=10):
     opposite_subnet = getopposite_subnet(subnet, is_server)
-    
+
     script_content = f"""#!/bin/bash
 while true; do
     ping -c 2 {opposite_subnet} > /dev/null
-    sleep 10
+    sleep {keepalive_interval}
 done
 """
-    
+
     script_path = "/usr/local/bin/keepalive.sh"
     with open(script_path, "w") as script_file:
         script_file.write(script_content)
-    
+
     os.chmod(script_path, 0o755)
-    print(f"Keepalive script created at {script_path}")
+    print(f"Keepalive script created at {script_path} with {keepalive_interval}s interval")
 
 def keepalive_service():
     service_content = """
@@ -754,20 +785,28 @@ User=root
 [Install]
 WantedBy=multi-user.target
 """
-    
+
     service_path = "/etc/systemd/system/keepalive.service"
     with open(service_path, "w") as service_file:
         service_file.write(service_content)
-    
+
     subprocess.run(["systemctl", "daemon-reload"], check=True)
     print(f"Keep-Alive service created at {service_path}")
-    
+
     subprocess.run(["systemctl", "enable", "keepalive.service"], check=True)
     subprocess.run(["systemctl", "start", "keepalive.service"], check=True)
-    display_checkmark("Keep-Alive service is now running")
+    print("✅ Keep-Alive service is now running")
 
 def setup_keepalive(subnet, is_server=True):
-    keepalive_script(subnet, is_server)
+    try:
+        keepalive_interval = int(input("\033[93mEnter \033[92mkeep-alive\033[93m interval in\033[97m seconds\033[93m: \033[0m"))
+        if keepalive_interval <= 0:
+            raise ValueError("Input must be greater than 0")
+    except ValueError as e:
+        print(f"Invalid input: {e}")
+        return
+    
+    keepalive_script(subnet, is_server, keepalive_interval)
     keepalive_service()
 
 
@@ -1319,9 +1358,10 @@ def show_menu():
         print("8.\033[92m Tinyvpn + Tinymapper\033[0m")
         print("9.\033[93m Tinymapper\033[0m")
         print("10.\033[96mEdit\033[0m")
-        print("11.\033[93mReset Timer\033[0m")
-        print("12.\033[92mRestart\033[0m")
-        print("13.\033[91mUninstall\033[0m")
+        print("11.\033[97mEdit Keepalive Timer\033[0m")
+        print("12.\033[93mReset Timer\033[0m")
+        print("13.\033[92mRestart\033[0m")
+        print("14.\033[91mUninstall\033[0m")
         print("\033[93m───────────────────────────────────────\033[0m")
         choice = input("Choose an option (0-12): ").strip()
 
@@ -1348,10 +1388,12 @@ def show_menu():
         elif choice == "10":
             edit_menu()
         elif choice == "11":
-            reset_menu()
+            edit_keepalive_timer()
         elif choice == "12":
-            restart_menu()
+            reset_menu()
         elif choice == "13":
+            restart_menu()
+        elif choice == "14":
             uninstall_menu()
         else:
             print("Wrong option. choose a valid number from 0 to 10.")
