@@ -1415,6 +1415,44 @@ def extract_parameters_tinyvpn(command):
 
     return parameters
 
+def extract_parameters_tinyvpn_client(command):
+    parameters = {}
+
+    server_ip_match = re.search(r"-r (\S+):(\d+)", command)
+    if server_ip_match:
+        parameters["server_ip"] = server_ip_match.group(1)
+        parameters["port"] = server_ip_match.group(2)  
+
+    fec_match = re.search(r"(-f[\d\:]+|--disable-fec)", command)
+    if fec_match:
+        parameters["fec_option"] = fec_match.group(1)
+
+    password_match = re.search(r'-k "([^"]+)"', command)
+    if password_match:
+        parameters["password"] = password_match.group(1)
+
+    subnet_match = re.search(r"--sub-net ([\d\.]+)", command)
+    if subnet_match:
+        parameters["subnet"] = subnet_match.group(1)
+
+    tun_name_match = re.search(r"--tun (\S+)", command)
+    if tun_name_match:
+        parameters["tun_name"] = tun_name_match.group(1)
+
+    mode_match = re.search(r"--mode (\d)", command)
+    if mode_match:
+        parameters["mode"] = mode_match.group(1)
+
+    timeout_match = re.search(r"--timeout (\d+)", command)
+    if timeout_match:
+        parameters["timeout"] = timeout_match.group(1)
+
+    mtu_match = re.search(r"tun-mtu (\d+)", command)
+    if mtu_match:
+        parameters["tun_mtu"] = mtu_match.group(1)
+
+    return parameters
+
 def prompt_for_edit(parameter_name, current_value, valid_options=None):
     new_value = input(f"Edit {parameter_name} (current value: {current_value}): ")
     
@@ -1538,7 +1576,7 @@ def edit_tinyvpn_client_service():
         print("Error: Could not find ExecStart in the service file.")
         return
 
-    current_parameters = extract_parameters_tinyvpn(current_command)
+    current_parameters = extract_parameters_tinyvpn_client(current_command)
     if not current_parameters:
         print("Error: Could not extract parameters from the command.")
         return
